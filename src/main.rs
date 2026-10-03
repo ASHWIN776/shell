@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::process;
 
 fn main() {
 
@@ -7,11 +8,14 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
     
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Failed to get input");
-        input = input.trim().to_string();
-    
-        eprintln!("{}: command not found", input);
+        let mut command = String::new();
+        io::stdin().read_line(&mut command).expect("Failed to get command");
+        let command = command.trim();
+
+        match command {
+            "exit" => process::exit(0),
+            other => eprintln!("{}: command not found", other)
+        };
     }
 
 
