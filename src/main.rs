@@ -17,6 +17,4 @@ fn main() {
             other => eprintln!("{}: command not found", other)
         };
     }
-
-
 }
