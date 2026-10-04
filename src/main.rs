@@ -8,19 +8,23 @@ fn main() {
         print!("$ ");
         io::stdout().flush().unwrap();
     
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Failed to get input");
-        let input: Vec<&str> = input.trim().split_whitespace().collect();
-        let command = &input[0];
+        let mut command = String::new();
+        io::stdin().read_line(&mut command).expect("Failed to get input");
+        let command = command.trim();
 
-
-        match *command {
+        match command {
             "exit" => process::exit(0),
-            "echo" => {
-                if input.len() > 1 {
-                    println!("{}", &input[1..].join(" "));
-                }
+            "echo" | "type" => println!(),
+            command if command.starts_with("echo ") => {
+                println!("{}", &command[5..]);
             },
+            command if command.starts_with("type ") => {
+                let arg = &command[5..];
+                match arg {
+                    "exit" | "echo" | "type" => println!("{} is a shell builtin", arg),
+                    other => eprintln!("{}: not found", other)
+                }
+            }
             other => eprintln!("{}: command not found", other)
         };
     }
