@@ -8,7 +8,7 @@ pub enum Command {
     Exit,
     Echo(Option<String>),
     Type(Option<String>),
-    Executable { path: String, args: Vec<String> },
+    Executable { name: String, args: Vec<String> },
     Invalid(String)
 }
 
@@ -29,12 +29,12 @@ pub fn parse_input(input: &str) ->  Command {
         other => {
             let args: Vec<&str> = other.split_whitespace().collect();
             let command = &args[0];
-            if let Ok(path) = search_path_for_command(command) {
+            if let Ok(_path) = search_path_for_command(command) {
                 if args.len() > 1 {
                     let args = args[1..].iter().map(|a| a.to_string()).collect();
-                    Command::Executable { path, args }
+                    Command::Executable { name: command.to_string(), args }
                 } else {
-                    Command::Executable { path, args: Vec::new() }
+                    Command::Executable { name: command.to_string(), args: Vec::new() }
                 }
             } else {
                 Command::Invalid(other.to_string())
@@ -70,8 +70,8 @@ pub fn execute_type(arg: Option<String>) {
     }
 }
 
-pub fn execute_external_program(path: &str, args: Vec<String>) {
-    match StdCommand::new(path).args(args).status() {
+pub fn execute_external_program(commnd: &str, args: Vec<String>) {
+    match StdCommand::new(commnd).args(args).status() {
         Ok(_) => {
             println!("Program ran successfully");
         },
