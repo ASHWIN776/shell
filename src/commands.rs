@@ -72,9 +72,7 @@ pub fn execute_type(arg: Option<String>) {
 
 pub fn execute_external_program(commnd: &str, args: Vec<String>) {
     match StdCommand::new(commnd).args(args).status() {
-        Ok(_) => {
-            println!("Program ran successfully");
-        },
+        Ok(_) => {},
         Err(err) => {
             println!("Error in running program: {}", err)
         }
