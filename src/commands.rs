@@ -1,11 +1,19 @@
 use std::{env, fs, process};
+use std::process::Command as StdCommand;
 use is_executable::IsExecutable;
+
+const BUILTINS: &[&str] = &["exit", "echo", "type"];
 
 pub enum Command {
     Exit,
     Echo(Option<String>),
     Type(Option<String>),
+    Executable { path: String, args: Vec<String> },
     Invalid(String)
+}
+
+pub fn is_builtin(arg: &str) -> bool {
+    BUILTINS.contains(&arg)
 }
 
 pub fn parse_input(input: &str) ->  Command {
@@ -18,7 +26,20 @@ pub fn parse_input(input: &str) ->  Command {
         "type" => Command::Type(None),
         input if input.starts_with("type ") => Command::Type(Some(input[5..].trim().to_string())),
 
-        other => Command::Invalid(other.to_string())
+        other => {
+            let args: Vec<&str> = other.split_whitespace().collect();
+            let command = &args[0];
+            if let Ok(path) = search_path_for_command(command) {
+                if args.len() > 1 {
+                    let args = args[1..].iter().map(|a| a.to_string()).collect();
+                    Command::Executable { path, args }
+                } else {
+                    Command::Executable { path, args: Vec::new() }
+                }
+            } else {
+                Command::Invalid(other.to_string())
+            }
+        }
     }
 }
 
@@ -36,17 +57,27 @@ pub fn execute_echo(arg: Option<String>) {
 
 pub fn execute_type(arg: Option<String>) {
     if let Some(arg) = arg {    
-        match &arg[..] {
-            "exit" | "echo" | "type" => println!("{} is a shell builtin", arg),
-            other => {
-                match search_path_for_command(other) {
-                    Ok(path) => println!("{} is {}", other, path),
-                    Err(_error) => eprintln!("{}: not found", other)
-                }
+        if is_builtin(&arg) {
+            println!("{} is a shell builtin", arg)
+        } else {
+            match search_path_for_command(&arg) {
+                Ok(path) => println!("{} is {}", arg, path),
+                Err(_error) => eprintln!("{}: not found", arg)
             }
         }
     } else {
         println!();
+    }
+}
+
+pub fn execute_external_program(path: &str, args: Vec<String>) {
+    match StdCommand::new(path).args(args).status() {
+        Ok(_) => {
+            println!("Program ran successfully");
+        },
+        Err(err) => {
+            println!("Error in running program: {}", err)
+        }
     }
 }
 
