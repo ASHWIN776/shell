@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{env, fs, process};
+use is_executable::IsExecutable;
 
 fn main() {
 
@@ -42,13 +43,9 @@ fn search_path_for_command(command: &str) -> Result<String, String> {
             if let Ok(entries) = fs::read_dir(&path) {
                 for entry in entries.flatten() {
                     if let Ok(file_type) = entry.file_type() {
-                        if !(file_type.is_file() && entry.file_name() == command) { continue }
-                        
-                        if let Ok(file_metadata) = entry.metadata() {
-                            if !file_metadata.permissions().readonly() {
-                                let hit_path = entry.path().to_string_lossy().into_owned();
-                                return Ok(hit_path)
-                            }
+                        if file_type.is_file() && entry.file_name() == command && entry.path().is_executable() {
+                            let hit_path = entry.path().to_string_lossy().into_owned();
+                            return Ok(hit_path)
                         }
                     }
                 }
