@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{env, fs, process};
 use std::process::Command as StdCommand;
 use is_executable::IsExecutable;
@@ -123,6 +123,18 @@ pub fn execute_pwd() {
 
 pub fn execute_cd(arg: Option<String>) {
     if let Some(path) = arg {
+        let path = if path == "~" {
+            match env::home_dir() {
+                Some(path) => path,
+                None => {
+                    eprintln!("cd: No Home directory found here");
+                    return;
+                }
+            }
+        } else {
+            PathBuf::from(path)
+        };
+
         let root = Path::new(&path);
         
         if root.is_dir() {
@@ -131,7 +143,7 @@ pub fn execute_cd(arg: Option<String>) {
                 Err(error) => eprintln!("cd: Something went wrong: {}", error)
             }
         } else {
-            eprintln!("cd: {}: No such file or directory", path);
+            eprintln!("cd: {}: No such file or directory", path.to_string_lossy());
         }
     }
 }
