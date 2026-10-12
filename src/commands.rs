@@ -1,8 +1,9 @@
+use std::path::Path;
 use std::{env, fs, process};
 use std::process::Command as StdCommand;
 use is_executable::IsExecutable;
 
-const BUILTINS: &[&str] = &["exit", "echo", "type", "pwd"];
+const BUILTINS: &[&str] = &["exit", "echo", "type", "pwd", "cd"];
 
 pub enum Command {
     Exit,
@@ -10,6 +11,7 @@ pub enum Command {
     Type(Option<String>),
     Executable { name: String, args: Vec<String> },
     Pwd,
+    Cd(Option<String>),
     Invalid(String)
 }
 
@@ -48,6 +50,9 @@ pub fn parse_input(input: &str) ->  Command {
         input if input.starts_with("type ") => Command::Type(Some(input[5..].trim().to_string())),
 
         "pwd" => Command::Pwd,
+
+        "cd" => Command::Cd(None),
+        input if input.starts_with("cd ") => Command::Cd(Some(input[3..].trim().to_string())), 
 
         other => {
             let args: Vec<&str> = other.split_whitespace().collect();
@@ -114,4 +119,19 @@ pub fn execute_pwd() {
         }
     }
 
+}
+
+pub fn execute_cd(arg: Option<String>) {
+    if let Some(path) = arg {
+        let root = Path::new(&path);
+        
+        if root.is_dir() {
+            match env::set_current_dir(path) {
+                Ok(_) => {},
+                Err(error) => eprintln!("cd: Something went wrong: {}", error)
+            }
+        } else {
+            eprintln!("cd: {}: No such file or directory", path);
+        }
+    }
 }
