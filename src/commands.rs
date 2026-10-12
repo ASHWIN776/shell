@@ -2,18 +2,39 @@ use std::{env, fs, process};
 use std::process::Command as StdCommand;
 use is_executable::IsExecutable;
 
-const BUILTINS: &[&str] = &["exit", "echo", "type"];
+const BUILTINS: &[&str] = &["exit", "echo", "type", "pwd"];
 
 pub enum Command {
     Exit,
     Echo(Option<String>),
     Type(Option<String>),
     Executable { name: String, args: Vec<String> },
+    Pwd,
     Invalid(String)
 }
 
 pub fn is_builtin(arg: &str) -> bool {
     BUILTINS.contains(&arg)
+}
+
+fn search_path_for_command(command: &str) -> Result<String, String> {
+    if let Some(paths) = env::var_os("PATH") {
+        for path in env::split_paths(&paths) {
+            if let Ok(entries) = fs::read_dir(&path) {
+                for entry in entries.flatten() {
+                    if let Ok(file_type) = entry.file_type() {
+                        if file_type.is_file() && entry.file_name() == command && entry.path().is_executable() {
+                            let hit_path = entry.path().to_string_lossy().into_owned();
+                            return Ok(hit_path)
+                        }
+                    }
+                }
+            }       
+        }
+        Err(String::from("No Match"))
+    } else {
+        Err(String::from("$PATH is not defined in the environment"))
+    }
 }
 
 pub fn parse_input(input: &str) ->  Command {
@@ -25,6 +46,8 @@ pub fn parse_input(input: &str) ->  Command {
 
         "type" => Command::Type(None),
         input if input.starts_with("type ") => Command::Type(Some(input[5..].trim().to_string())),
+
+        "pwd" => Command::Pwd,
 
         other => {
             let args: Vec<&str> = other.split_whitespace().collect();
@@ -42,6 +65,8 @@ pub fn parse_input(input: &str) ->  Command {
         }
     }
 }
+
+// Execute commands - functions
 
 pub fn execute_exit() {
     process::exit(0)
@@ -79,25 +104,14 @@ pub fn execute_external_program(commnd: &str, args: Vec<String>) {
     }
 }
 
-fn search_path_for_command(command: &str) -> Result<String, String> {
-    if let Some(paths) = env::var_os("PATH") {
-        for path in env::split_paths(&paths) {
-            if let Ok(entries) = fs::read_dir(&path) {
-                for entry in entries.flatten() {
-                    if let Ok(file_type) = entry.file_type() {
-                        if file_type.is_file() && entry.file_name() == command && entry.path().is_executable() {
-                            let hit_path = entry.path().to_string_lossy().into_owned();
-                            return Ok(hit_path)
-                        }
-                    }
-                }
-            }       
+pub fn execute_pwd() {
+    match env::current_dir() {
+        Ok(path) => {
+            println!("{}", path.to_string_lossy().into_owned())
+        },
+        Err(error) => {
+            eprintln!("Failed to run pwd: {}", error);
         }
-        Err(String::from("No Match"))
-    } else {
-        Err(String::from("$PATH is not defined in the environment"))
     }
+
 }
-
-
-

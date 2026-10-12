@@ -18,6 +18,7 @@ pub fn run() {
             Command::Echo(arg) => commands::execute_echo(arg),
             Command::Type(arg) => commands::execute_type(arg),
             Command::Executable { name, args } => commands::execute_external_program(&name, args),
+            Command::Pwd => commands::execute_pwd(),
             Command::Invalid(invalid_command) => eprintln!("{}: command not found", invalid_command)
         };
     }
