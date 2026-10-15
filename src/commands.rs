@@ -3,8 +3,11 @@ use std::{env, process};
 use std::process::Command as StdCommand;
 use crate::utils::search_path_for_command;
 
-
 const BUILTINS: &[&str] = &["exit", "echo", "type", "pwd", "cd"];
+
+pub fn is_builtin(arg: &str) -> bool {
+    BUILTINS.contains(&arg)
+}
 
 pub enum Command {
     Exit,
@@ -30,17 +33,13 @@ impl Command {
     }
 }
 
-pub fn is_builtin(arg: &str) -> bool {
-    BUILTINS.contains(&arg)
-}
-
 // Execute commands - functions
 
-pub fn execute_exit() {
+fn execute_exit() {
     process::exit(0)
 }
 
-pub fn execute_echo(arg: Option<String>) {
+fn execute_echo(arg: Option<String>) {
     if let Some(arg) = arg {
         println!("{}", arg);
     } else {
@@ -48,7 +47,7 @@ pub fn execute_echo(arg: Option<String>) {
     }
 }
 
-pub fn execute_type(arg: Option<String>) {
+fn execute_type(arg: Option<String>) {
     if let Some(arg) = arg {    
         if is_builtin(&arg) {
             println!("{} is a shell builtin", arg)
@@ -63,7 +62,7 @@ pub fn execute_type(arg: Option<String>) {
     }
 }
 
-pub fn execute_external_program(commnd: &str, args: Vec<String>) {
+fn execute_external_program(commnd: &str, args: Vec<String>) {
     match StdCommand::new(commnd).args(args).status() {
         Ok(_) => {},
         Err(err) => {
@@ -72,7 +71,7 @@ pub fn execute_external_program(commnd: &str, args: Vec<String>) {
     }
 }
 
-pub fn execute_pwd() {
+fn execute_pwd() {
     match env::current_dir() {
         Ok(path) => {
             println!("{}", path.to_string_lossy().into_owned())
@@ -84,7 +83,7 @@ pub fn execute_pwd() {
 
 }
 
-pub fn execute_cd(arg: Option<String>) {
+fn execute_cd(arg: Option<String>) {
     if let Some(path) = arg {
         let path = if path.starts_with("~") {
             let home_path = match env::home_dir() {
