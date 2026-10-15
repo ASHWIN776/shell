@@ -1,7 +1,8 @@
 use std::path::{PathBuf};
-use std::{env, fs, process};
+use std::{env, process};
 use std::process::Command as StdCommand;
-use is_executable::IsExecutable;
+use crate::utils::search_path_for_command;
+
 
 const BUILTINS: &[&str] = &["exit", "echo", "type", "pwd", "cd"];
 
@@ -15,60 +16,22 @@ pub enum Command {
     Invalid(String)
 }
 
+impl Command {
+    pub fn run(self) {
+        match self {
+            Command::Exit => execute_exit(),
+            Command::Echo(arg) => execute_echo(arg),
+            Command::Type(arg) => execute_type(arg),
+            Command::Executable { name, args } => execute_external_program(&name, args),
+            Command::Pwd => execute_pwd(),
+            Command::Cd(arg) => execute_cd(arg),
+            Command::Invalid(invalid_command) => eprintln!("{}: command not found", invalid_command)
+        }
+    }
+}
+
 pub fn is_builtin(arg: &str) -> bool {
     BUILTINS.contains(&arg)
-}
-
-fn search_path_for_command(command: &str) -> Result<String, String> {
-    if let Some(paths) = env::var_os("PATH") {
-        for path in env::split_paths(&paths) {
-            if let Ok(entries) = fs::read_dir(&path) {
-                for entry in entries.flatten() {
-                    if let Ok(file_type) = entry.file_type() {
-                        if file_type.is_file() && entry.file_name() == command && entry.path().is_executable() {
-                            let hit_path = entry.path().to_string_lossy().into_owned();
-                            return Ok(hit_path)
-                        }
-                    }
-                }
-            }       
-        }
-        Err(String::from("No Match"))
-    } else {
-        Err(String::from("$PATH is not defined in the environment"))
-    }
-}
-
-pub fn parse_input(input: &str) ->  Command {
-    match input {
-        "exit" => Command::Exit,
-
-        "echo" => Command::Echo(None),
-        input if input.starts_with("echo ") => Command::Echo(Some(input[5..].trim().to_string())),
-
-        "type" => Command::Type(None),
-        input if input.starts_with("type ") => Command::Type(Some(input[5..].trim().to_string())),
-
-        "pwd" => Command::Pwd,
-
-        "cd" => Command::Cd(None),
-        input if input.starts_with("cd ") => Command::Cd(Some(input[3..].trim().to_string())), 
-
-        other => {
-            let args: Vec<&str> = other.split_whitespace().collect();
-            let command = &args[0];
-            if let Ok(_path) = search_path_for_command(command) {
-                if args.len() > 1 {
-                    let args = args[1..].iter().map(|a| a.to_string()).collect();
-                    Command::Executable { name: command.to_string(), args }
-                } else {
-                    Command::Executable { name: command.to_string(), args: Vec::new() }
-                }
-            } else {
-                Command::Invalid(other.to_string())
-            }
-        }
-    }
 }
 
 // Execute commands - functions

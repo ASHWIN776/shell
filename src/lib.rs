@@ -2,7 +2,8 @@
 use std::io::{self, Write};
 
 mod commands;
-use commands::{Command, parse_input};
+mod utils;
+use utils::parse_input;
 
 pub fn run() {
     loop {
@@ -12,16 +13,7 @@ pub fn run() {
         let mut command = String::new();
         io::stdin().read_line(&mut command).expect("Failed to get input");
         let command = parse_input(command.trim());
-
-        match command {
-            Command::Exit => commands::execute_exit(),
-            Command::Echo(arg) => commands::execute_echo(arg),
-            Command::Type(arg) => commands::execute_type(arg),
-            Command::Executable { name, args } => commands::execute_external_program(&name, args),
-            Command::Pwd => commands::execute_pwd(),
-            Command::Cd(arg) => commands::execute_cd(arg),
-            Command::Invalid(invalid_command) => eprintln!("{}: command not found", invalid_command)
-        };
+        command.run();
     }
 }
 
